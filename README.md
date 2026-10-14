@@ -23,6 +23,30 @@ cloudflare-image-mcp/
 
 ---
 
+## 🤖 Autonomous Amazon Affiliate Carousel Agent
+
+This repo also contains an autonomous agent that, on a daily schedule, picks one
+Amazon product in a configured niche, generates a 9:16 TikTok photo-carousel
+video for it (Cloudflare Workers AI + ffmpeg), builds the tagged Amazon
+Associates link, publishes it to the ManyLinks bio page and saves ready-to-upload
+assets. TikTok uploading is manual for now.
+
+- Workflow: [`.github/workflows/post.yml`](.github/workflows/post.yml) (daily cron + `workflow_dispatch`)
+- Full design & guardrails: [`AGENT.md`](AGENT.md)
+- Code: `src/` (`select_product.py`, `build_link.py`, `make_images.py`, `write_copy.py`, `add_manylink.py`, `main.py`)
+- State: `data/posted.json` (never repeats an ASIN within 90 days)
+
+```bash
+# Local run (after `cp .env.example .env` and filling in the secrets)
+pip install -r requirements.txt
+python -m src.main
+```
+
+Output lands in `output/<date>-<asin>/` (`video.mp4`, `slides/*.png`,
+`caption.txt`, `product.json`, `UPLOAD_CHECKLIST.md`).
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites

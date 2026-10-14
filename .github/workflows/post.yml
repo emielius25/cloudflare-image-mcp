@@ -1,0 +1,84 @@
+name: Amazon affiliate carousel
+
+on:
+  schedule:
+    # Every day at 09:00 UTC
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      posts_per_run:
+        description: "How many products to post this run"
+        required: false
+        default: "1"
+
+concurrency:
+  group: amazon-affiliate-carousel
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      # Secrets
+      RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+      MANYLINKS_API_KEY: ${{ secrets.MANYLINKS_API_KEY }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      # Repo variables
+      AFFILIATE_TAG: ${{ vars.AFFILIATE_TAG }}
+      NICHE: ${{ vars.NICHE }}
+      TARGET: ${{ vars.TARGET }}
+      POSTS_PER_RUN: ${{ github.event.inputs.posts_per_run || vars.POSTS_PER_RUN || '1' }}
+      # Optional LLM endpoint overrides
+      LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      LLM_VISION_MODEL: ${{ vars.LLM_VISION_MODEL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the agent
+        run: python -m src.main
+
+      - name: Commit state and assets back to the repo
+        if: always()
+        run: |
+          git config user.name "affiliate-agent[bot]"
+          git config user.email "affiliate-agent@users.noreply.github.com"
+          git add data/posted.json output
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore: affiliate carousel run $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Upload assets artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: affiliate-assets-${{ github.run_id }}
+          path: output/
+          if-no-files-found: ignore
+          retention-days: 14

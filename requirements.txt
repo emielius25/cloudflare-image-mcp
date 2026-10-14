@@ -1,0 +1,4 @@
+# Runtime dependencies for the Amazon affiliate carousel agent.
+# ffmpeg is a system dependency (installed in CI, not via pip).
+requests>=2.31,<3
+Pillow>=10.0

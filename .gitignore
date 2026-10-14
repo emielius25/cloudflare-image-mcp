@@ -23,6 +23,15 @@ workers/wrangler.toml
 workers/.wrangler
 .dev.vars
 
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local tools (ffmpeg test binary etc.)
+.tools/
+
 # Docker
 *.log
 
